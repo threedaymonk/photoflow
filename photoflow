@@ -2,9 +2,6 @@
 require "fileutils"
 require "digest/sha1"
 
-DEST  = "#{ENV['HOME']}/Pictures/Workflow"
-CORES = `grep ^processor /proc/cpuinfo | wc -l`.to_i
-
 module Photoflow
   COPY_CONVERTER = lambda{ |src, dest| FileUtils.cp(src, dest) }
   CONVERTERS  = {
@@ -57,9 +54,8 @@ module Photoflow
   end
 
   class BulkConverter
-    def initialize(root_dir, core_number)
+    def initialize(root_dir)
       @root_dir = root_dir
-      @core_number = core_number
     end
 
     def convert
@@ -71,7 +67,7 @@ module Photoflow
           command.call(src, dest + ".tmp")
           FileUtils.mv(dest + ".tmp", dest)
           basename = File.basename(dest)
-          $stderr.puts("Converted [#{@core_number}]: #{basename}")
+          $stderr.puts("Converted: #{basename}")
         end
       end
     end
@@ -79,7 +75,7 @@ module Photoflow
   private
     def convertible_files
       Dir[File.join(@root_dir, ORIGINAL, "*", "*.{#{EXTENSIONS.join(",")}}")].select{ |f|
-        this_core?(f) && !File.exist?(dest_path(f))
+        !File.exist?(dest_path(f))
       }.sort
     end
 
@@ -97,29 +93,13 @@ module Photoflow
 
       dest_path_parts.join(File::SEPARATOR)
     end
-
-    def this_core?(path)
-      Digest::SHA1.hexdigest(path)[0,1].to_i(16) % CORES == @core_number
-    end
   end
 end
 
-Thread.abort_on_exception = true
-threads = []
+DEST  = "#{ENV['HOME']}/Pictures/Workflow"
 
 Photoflow.each_card do |source|
-  threads << Thread.new{
-    Photoflow::Importer.new(source, DEST).import
-  }
+  Photoflow::Importer.new(source, DEST).import
 end
 
-CORES.times do |core_number|
-  threads << Thread.new{
-    sleep 5 # Cheap hack to make sure that some pictures have been copied
-    Photoflow::BulkConverter.new(DEST, core_number).convert
-  }
-end
-
-threads.each do |t|
-  t.join
-end
+Photoflow::BulkConverter.new(DEST).convert
