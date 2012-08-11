@@ -13,7 +13,7 @@ module Photoflow
   EXTENSIONS   = CONVERTERS.keys
   ORIGINAL     = "original"
   CONVERTED    = "converted"
-  MOUNT_POINTS = ["/media"]
+  MOUNT_POINTS = ["/media", "/mnt"]
 
   def self.each_card(&blk)
     Dir["{#{MOUNT_POINTS.join(",")}}/*/DCIM"].map{ |path| path.sub(%r!/DCIM$!, "") }.uniq.each(&blk)
