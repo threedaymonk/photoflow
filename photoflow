@@ -14,7 +14,7 @@ module Photoflow
   ORIGINAL     = "original"
   CONVERTED    = "converted"
   THUMBNAILS   = "thumbnails"
-  THUMBNAIL_COMMAND = lambda { |src, dest| system("convert %s -auto-orient -resize 200x200 -quality 60 %s" % [src, dest]) }
+  THUMBNAIL_COMMAND = lambda { |src, dest| system('convert "%s" -auto-orient -resize 200x200 -quality 60 "%s"' % [src, dest]) }
   MOUNT_POINTS = ["/media", "/mnt"]
 
   def self.each_card(&blk)
