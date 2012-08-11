@@ -13,6 +13,8 @@ module Photoflow
   EXTENSIONS   = CONVERTERS.keys
   ORIGINAL     = "original"
   CONVERTED    = "converted"
+  THUMBNAILS   = "thumbnails"
+  THUMBNAIL_COMMAND = lambda { |src, dest| system("convert %s -resize 200x200 -quality 60 %s" % [src, dest]) }
   MOUNT_POINTS = ["/media", "/mnt"]
 
   def self.each_card(&blk)
@@ -94,6 +96,39 @@ module Photoflow
       dest_path_parts.join(File::SEPARATOR)
     end
   end
+
+  class Thumbnailer
+    def initialize(root_dir)
+      @root_dir = root_dir
+    end
+
+    def thumbnail
+      while (files = thumbnailable_files).any?
+        files.each do |src|
+          command = THUMBNAIL_COMMAND
+          dest = dest_path(src)
+          FileUtils.mkdir_p(File.dirname(dest))
+          command.call(src, dest + ".tmp")
+          FileUtils.mv(dest + ".tmp", dest)
+          basename = File.basename(dest)
+          $stderr.puts("Thumbnailed: #{basename}")
+        end
+      end
+    end
+
+  private
+    def thumbnailable_files
+      Dir[File.join(@root_dir, CONVERTED, "*", "*.jpg")].select{ |f|
+        !File.exist?(dest_path(f))
+      }.sort
+    end
+
+    def dest_path(source_path)
+      dest_path_parts = source_path.split(File::SEPARATOR)
+      dest_path_parts[-3] = THUMBNAILS
+      dest_path_parts.join(File::SEPARATOR)
+    end
+  end
 end
 
 DEST  = "#{ENV['HOME']}/Pictures/Workflow"
@@ -103,3 +138,4 @@ Photoflow.each_card do |source|
 end
 
 Photoflow::BulkConverter.new(DEST).convert
+Photoflow::Thumbnailer.new(DEST).thumbnail
