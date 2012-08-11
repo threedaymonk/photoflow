@@ -108,10 +108,11 @@ module Photoflow
           command = THUMBNAIL_COMMAND
           dest = dest_path(src)
           FileUtils.mkdir_p(File.dirname(dest))
-          command.call(src, dest + ".tmp")
-          FileUtils.mv(dest + ".tmp", dest)
-          basename = File.basename(dest)
-          $stderr.puts("Thumbnailed: #{basename}")
+          if command.call(src, dest + ".tmp")
+            FileUtils.mv(dest + ".tmp", dest)
+            basename = File.basename(dest)
+            $stderr.puts("Thumbnailed: #{basename}")
+          end
         end
       end
     end
